@@ -1,0 +1,10 @@
+[
+    {
+        "name": "ARM GCC TarsGo-PEPB",
+        "compilers": {
+            "C": "D:/discretelibs/arm-gnu-toolchain-12.2/bin/arm-none-eabi-gcc.exe",
+            "CXX": "D:/discretelibs/arm-gnu-toolchain-12.2/bin/arm-none-eabi-g++.exe"
+        },
+        "toolchainFile": "embedded-toolchain.cmake"
+    }
+]
