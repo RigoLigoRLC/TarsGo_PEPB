@@ -1,0 +1,4 @@
+# https://forums.100ask.net/t/topic/1694/2
+CompileFlags:
+    Remove:
+        - "-mthumb-interwork"

@@ -29,6 +29,7 @@
 - cmake/
 - CMakeLists.txt
 - embedded-toolchain.cmake
+- .clangd
 
 在进入 VSCode 时，使用“打开文件夹”功能，然后打开包含`CMakeLists.txt`的目录，此即为项目目录。
 
