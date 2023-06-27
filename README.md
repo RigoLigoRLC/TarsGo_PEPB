@@ -7,6 +7,10 @@
 
 见[配置 PEPB](./HOWTO.md)。
 
+关于配置中常产生的问题，见[FAQ](./FAQ.md)。
+
+关于本项目使用中已经的部分问题，见[已知问题](./KNOWNISSUE.md)。
+
 # 致谢
 
 使用了廖洽源开源的 CMakeLists 和 .mxproject 解析代码搭建。[link](https://gist.github.com/qiayuanliao/9cea0e3e588d5d12735202fc1c1cdd6d)

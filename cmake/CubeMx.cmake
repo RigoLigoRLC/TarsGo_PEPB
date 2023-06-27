@@ -113,3 +113,45 @@ function(stm32_create_hex NAME)
             COMMAND ${CMAKE_OBJCOPY} -Obinary $<TARGET_FILE:${NAME}.elf> ${BIN_FILE}
             COMMENT " Building ${HEX_FILE} Building ${BIN_FILE}")
 endfunction()
+
+#
+# stm32_fixup_project
+# Do necessary post processings to make sure some CubeMX features work automatically
+# without user intervention.
+#
+# REQUIRED
+# [TARGET_NAME] Target name, WITHOUT .elf extension
+# [CUBEMX_DIR] CubeMX project directory, relative to CMakeLists.txt, usually just directory name
+# [CPU_TYPE] CPU type, e.g. cortex-m4
+#
+function(stm32_fixup_project TARGET_NAME CUBEMX_DIR CPU_TYPE)
+    message(STATUS "Fixing up project ${TARGET_NAME}...")
+
+    # Make CubeMX directory absolute
+    set(CUBEMX_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${CUBEMX_DIR})
+
+    # //////////////////  DSP Lib  ////////////////////
+    if(EXISTS "${CUBEMX_DIR}/Middlewares/ST/ARM/DSP")
+        message(STATUS " - You have selected DSP library in CubeMX. Attempting to fixup linkage.")
+        file(GLOB_RECURSE DSP_LIB_ARCHIVE "${CUBEMX_DIR}/Middlewares/ST/ARM/DSP/*.a")
+        if(DSP_LIB_ARCHIVE)
+            message(STATUS " - Found DSP library archive: ${DSP_LIB_ARCHIVE}")
+            target_link_libraries(${PROJECT_NAME}.elf PUBLIC ${DSP_LIB_ARCHIVE})
+
+            # Definitions based on CPU type
+            # NOTE: Setting __FPU_PRESENT is not needed because stm32f4xxyy.h will do it for us
+            if(CPU_TYPE STREQUAL "cortex-m0")
+                target_compile_definitions(${PROJECT_NAME}.elf PUBLIC $<$<COMPILE_LANGUAGE:C,CXX>:ARM_MATH_CM0>)
+            elseif(CPU_TYPE STREQUAL "cortex-m4")
+                target_compile_definitions(${PROJECT_NAME}.elf PUBLIC $<$<COMPILE_LANGUAGE:C,CXX>:ARM_MATH_CM4>)
+            elseif(CPU_TYPE STREQUAL "cortex-m7")
+                target_compile_definitions(${PROJECT_NAME}.elf PUBLIC $<$<COMPILE_LANGUAGE:C,CXX>:ARM_MATH_CM7>)
+            else()
+                message(WARNING " - DSP library not supported for CPU type ${CPU_TYPE}. Please contact PEPB author.")
+            endif()
+        else()
+            message(WARNING " - DSP library archive not found. Please contact PEPB author.")
+        endif()
+    endif()
+    # //////////////////////////////////////////////////
+endfunction()

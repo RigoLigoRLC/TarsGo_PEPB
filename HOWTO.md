@@ -3,6 +3,8 @@
 
 基于 PEPB 的嵌入式项目虽然可以当做正常的 CMake 项目开发，但许多代码细节专为 VSCode 设计，因此仅推荐在 VSCode 中配置此框架。文档中会介绍 VSCode 上的配置，同时项目源码中包含了 [.vscode](.vscode/)  目录及配置模板方便为 VSCode 配置。
 
+## 请注意：项目文件夹路径中不能出现**空格**，否则可能导致烧录出现异常。
+
 ## 依赖项
 
 你需要提前在计算机上安装：
@@ -98,7 +100,11 @@ set(CUBEMX_PROJECT_DIR BoardC) # 此处 BoardC 即为 CubeMX 项目所处的子�
 
 ## 添加更多的源码文件
 
-如果你需要添加更多的源代码，那么你需要使用 CMake 的其他命令管理源码列表。通常，我们可以使用偷懒的做法：
+如果你需要添加更多的源代码，那么你需要使用 CMake 的其他命令管理源码列表。推荐将这些语句放在`EXTRA SOURCES`部分，且本部分也有相应的注释加以示范。
+
+### 源码文件
+
+通常，我们可以使用偷懒的做法：
 
 ```cmake
 file(GLOB_RECURSE MY_SOURCE src/*.c) # GLOB_RECURSE 递归地匹配文件，并将它们放入列表 MY_SOURCE 中
@@ -115,6 +121,26 @@ stm32_create_target(CUBEMX_DIR ${CUBEMX_PROJECT_DIR}
 ```
 
 在`EXTRA_SOURCES`后添加`${MY_SOURCES}`，即意为将`MY_SOURCES`变量的值作为函数参数传递。同时，`EXTRA_SOURCES`的后面可以跟随多个源码文件路径（或者如上文中的列表变量）。可以灵活搭配。**注意：添加源码文件后，仍需重新配置项目使之生效。**
+
+### 包含文件（头文件）
+
+对于需要被包含的头文件，需要使用`include_directories`指令添加它们所在的目录。例如，如果想要在`main.c`中包含一个项目根目录下的`inc/something.h`文件，你需要在`CMakeLists.txt`中添加以下代码：
+
+```cmake
+include_directories(inc)
+```
+
+然后在`main.c`中如此引用：
+
+```c
+#include "something.h"
+```
+
+以上述方式指定`inc/`目录为包含目录后，如果存在子目录中的头文件（形如`inc/module/mods.h`），可以如此引用之：
+
+```c
+#include "module/mods.h"
+```
 
 # 烧录
 

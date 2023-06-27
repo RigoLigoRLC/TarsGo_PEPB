@@ -44,12 +44,11 @@ add_link_options(-mfloat-abi=hard -mfpu=fpv4-sp-d16)
 
 # /////////////////////////////////////////////////////////////////////////////////////////////////
 # //
-# //   Add your sources and libraries HERE, and don't forget to add them to
-# //   the add_executable() & target_link_libraries() command below
-# //   include_directories(lib/libfoo) # Assuming its CMakeLists will set linking option variables for you
+# //   EXTRA SOURCES
 # //
 # /////////////////////////////////////////////////////////////////////////////////////////////////
 # file(GLOB_RECURSE MY_SOURCES src/*.c) ...
+# include_directories(inc)
 
 # Add subroutines
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
@@ -62,6 +61,9 @@ stm32_create_target(CUBEMX_DIR ${CUBEMX_PROJECT_DIR}
                     CPU_TYPE ${STM32_CPU_TYPE}
                     # EXTRA_SOURCES ${MY_SOURCES}
 )
+
+# Additional post processings
+stm32_fixup_project(${PROJECT_NAME} ${CUBEMX_PROJECT_DIR} ${STM32_CPU_TYPE})
 
 # Create Hex & Bin
 stm32_create_hex(${PROJECT_NAME})
