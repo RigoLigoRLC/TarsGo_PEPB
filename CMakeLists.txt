@@ -51,15 +51,20 @@ add_link_options(-mfloat-abi=hard -mfpu=fpv4-sp-d16)
 # /////////////////////////////////////////////////////////////////////////////////////////////////
 # file(GLOB_RECURSE MY_SOURCES src/*.c) ...
 
-# Create CubeMX lib
+# Add subroutines
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 include(CubeMx)
-stm32_create_cube_lib(${CUBEMX_PROJECT_DIR} ${STM32_CPU_TYPE})
+include(OpenOcdFlashing)
 
-# Create Target
-file(GLOB CUBEMX_STARTUP_ASM ${CUBEMX_PROJECT_DIR}/*.s)
-add_executable(${PROJECT_NAME}.elf ${CUBEMX_STARTUP_ASM})
-target_link_libraries(${PROJECT_NAME}.elf board_${CUBEMX_PROJECT_DIR})
+# Create CubeMX lib
+stm32_create_target(CUBEMX_DIR ${CUBEMX_PROJECT_DIR}
+                    TARGET_NAME ${PROJECT_NAME}.elf
+                    CPU_TYPE ${STM32_CPU_TYPE}
+                    # EXTRA_SOURCES ${MY_SOURCES}
+)
 
 # Create Hex & Bin
 stm32_create_hex(${PROJECT_NAME})
+
+# Flashing
+pepb_add_download_target(${PROJECT_NAME})

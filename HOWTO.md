@@ -1,13 +1,14 @@
 
-# 配置 PEPB
+# 配置 PEPB 编译
 
-基于 PEPB 的嵌入式项目虽然可以当做正常的 CMake 项目开发，但最好使用一个 IDE 来加强体验。文档中会介绍 VSCode 上的配置，同时项目源码中包含了 [.vscode](.vscode/)  目录方便为 VSCode 配置。
+基于 PEPB 的嵌入式项目虽然可以当做正常的 CMake 项目开发，但许多代码细节专为 VSCode 设计，因此仅推荐在 VSCode 中配置此框架。文档中会介绍 VSCode 上的配置，同时项目源码中包含了 [.vscode](.vscode/)  目录及配置模板方便为 VSCode 配置。
 
 ## 依赖项
 
 你需要提前在计算机上安装：
 
 - [ARM GCC Toolchain](https://developer.arm.com/Tools%20and%20Software/GNU%20Toolchain) （仅需要解压。如不使用 VSCode ，还需要将 bin 目录添加到系统 PATH 中）
+- [OpenOCD](https://github.com/xpack-dev-tools/openocd-xpack/releases) （仅需要解压。可能需要手动点击“Show all xxx assets”展开列表才能看到 Windows 版本）
 - [Ninja build](https://github.com/ninja-build/ninja/releases) （需要处于系统 PATH 中）
 - [CMake](https://cmake.org)（安装时请选择将其加入 PATH 中）
 - STM32CubeMX
@@ -16,6 +17,7 @@
 
 - clangd (by LLVM)
 - CMake Tools (by Microsoft)
+- Cortex-Debug (by marus25) （调试使用）
 
 安装 clangd 后， VSCode 右下角会弹窗提示未找到 Clangd 可执行文件。点击蓝色按钮允许其自动下载最新版的 clangd 并配置。请耐心等待这一过程完成。
 
@@ -35,6 +37,10 @@
 
 ## 设置工具链路径
 
+### ARM GCC 路径配置
+
+ARM GCC 即是本项目采用的编译器。
+
 编辑`.vscode/cmake-kits.json`文件，将`"C":`和`"CXX":`后的字符串改为自己计算机上 ARM GCC 编译器的可执行文件路径。如：
 ```json
             "C": "D:/discretelibs/arm-gnu-toolchain-12.2/bin/arm-none-eabi-gcc.exe",
@@ -44,7 +50,23 @@
 
 你还可以在其他地方长期保留适用自己计算机的`cmake-kits.json`文件，并在以后创建新项目时直接覆盖复制。
 
-然后在 VSCode 底部， CMake 插件显示“No Kit Selected”的部分点击。然后在顶端弹出的命令板中选择“ARM GCC TarsGo-PEPB”。此时 CMake 会自动开始配置，但会因为还没有配置完毕而直接失败。暂时忽略失败的配置。
+### OpenOCD 路径配置
+
+OpenOCD 即是本项目采用的烧录及调试程序。
+
+编辑`cmake/Settings.json`文件，将`OpenOcd`条目下的`Path`项设为自己计算机上 OpenOCD 解压出来后里面的 bin 目录路径。如：
+```json
+    "OpenOcd": {
+        "Path": "X:/ABCDABCD/EFGHEFGH/xpack-openocd-0.12.0-1/bin",
+        "Chip": "stm32f4x",
+        "Programmer": "stlink"
+    }
+```
+`Programmer`项中指明你使用的烧录器/调试器/仿真器类型。JSON 文件的注释中列出了几种常见的调试器。正点原子的无线调试器为 CMSIS-DAP 协议。**注：如果你今后需要更换其他调试器，修改此项后需要重新配置项目。关于项目配置，见[后文](#关于手动配置cmake-configure项目)。**
+
+同样，此配置文件也可以长期保留以便日后使用。
+
+配置完毕后，在 VSCode 底部， CMake 插件显示“No Kit Selected”的部分点击。然后在顶端弹出的命令板中选择“ARM GCC TarsGo-PEPB”。此时 CMake 会自动开始配置（configure）项目，但会因为我们还没有完成 PEPB 整体的设置而失败。暂时忽略失败的配置。
 
 ## 使用 CubeMX 添加单片机项目
 
@@ -64,6 +86,8 @@ set(CUBEMX_PROJECT_DIR BoardC) # 此处 BoardC 即为 CubeMX 项目所处的子�
 
 然后按 Ctrl+S 保存 CMakeLists.txt。此时 VSCode 应该自动进行配置并成功生成。
 
+### 关于手动配置（CMake Configure）项目……
+
 **注1：如果没有自动进行配置操作，可在 VSCode 左侧点击 CMake 选项卡，并在其顶部点击第一个按钮（鼠标停留时可看到“配置所有项目”提示。），或者按 F1 打开命令面板，执行“CMake: 配置”命令。**
 
 **注2：在每一次更改了 CubeMX 中的配置后，都应该手动重新进行项目配置。**
@@ -72,6 +96,50 @@ set(CUBEMX_PROJECT_DIR BoardC) # 此处 BoardC 即为 CubeMX 项目所处的子�
 
 此时配置已经完成。单击底部的 Build 按钮应该可以正常编译 elf 文件。你现在可以在 VSCode 中打开 CubeMX 生成的`Core/Src/main.c`文件并试试编写代码。
 
-## 后记
+## 添加更多的源码文件
 
-默认情况下，`Core/`中的所有.c、.cpp和.h文件都将在配置时自动地、递归地被搜索并加入编译列表中。你可以将所有的项目代码堆积在这里，但更推荐使用 CMake 的其他方式，独立地管理项目中 CubeMX 以外的源码。
+如果你需要添加更多的源代码，那么你需要使用 CMake 的其他命令管理源码列表。通常，我们可以使用偷懒的做法：
+
+```cmake
+file(GLOB_RECURSE MY_SOURCE src/*.c) # GLOB_RECURSE 递归地匹配文件，并将它们放入列表 MY_SOURCE 中
+```
+
+这样可以得到一个文件列表`MY_SOURCE`，内容为 src 目录下递归查找 *.c 文件得到的文件名。如果要将它们加入到编译目标中，只需在`stm32_create_target`函数中添加`EXTRA_SOURCES`参数（CMakeLists 模板中已经有这一行，使用时也可直接取消其注释）：
+
+```cmake
+stm32_create_target(CUBEMX_DIR ${CUBEMX_PROJECT_DIR}
+                    TARGET_NAME ${PROJECT_NAME}.elf
+                    CPU_TYPE ${STM32_CPU_TYPE}
+                    EXTRA_SOURCES ${MY_SOURCES} another/source.c
+)
+```
+
+在`EXTRA_SOURCES`后添加`${MY_SOURCES}`，即意为将`MY_SOURCES`变量的值作为函数参数传递。同时，`EXTRA_SOURCES`的后面可以跟随多个源码文件路径（或者如上文中的列表变量）。可以灵活搭配。**注意：添加源码文件后，仍需重新配置项目使之生效。**
+
+# 烧录
+
+PEPB 自带的 CMakeLists 会在添加编译目标后，再将编译目标添加到烧录目标中（见 CMakeLists 中的`pepb_add_download_target()`函数调用）。这个函数会产生一个名为`Download_Via_OpenOCD`的自定义目标，并将编译目标设为这个目标的依赖项（如此便可实现每次尝试烧录时，CMake 都保证编译出的程序是最新的，无需点击编译后再点击烧录）。
+
+要执行烧录，可在 VSCode 下方的 Build 按钮右侧的`[all]`上单击，然后在顶部的命令面板中选择`Download_Via_OpenOCD`目标。然后，单击 Build 按钮。
+
+*实验性：烧录仅测试了 ST-LINK V2 的兼容性。如其他烧录器使用中存在兼容性问题，请联系作者帮忙调试！*
+
+# 调试
+
+## 配置 Cortex-Debug
+
+PEPB 在配置 OpenOCD 烧录时会自动在`.vscode/launch.json`中生成适用于 VSCode 的 Cortex-Debug 插件的调试描述文件。因此不需人工干预调试配置文件的生成。但是，你需要配置 Cortex-Debug 插件的 OpenOCD 路径，或者将 OpenOCD 添加进系统 PATH 。在此介绍前者的操作方式：
+
+按 Ctrl+,（逗号）打开 VSCode 设置，搜索“Cortex-debug: Openocd Path”。由于此插件没有提供这个配置项的输入框，因此只能点击“在 settings.json 中编辑”直接修改配置文件。点击后 VSCode 会自动生成一个空的字符串，此时在里面输入 `openocd.exe` 的路径并保存。仍需要使用正斜杠。
+
+```json
+    "cortex-debug.openocdPath": "D:/discretelibs/xpack-openocd-0.12.0-1/bin/openocd.exe"
+```
+
+## 启动调试
+
+在 VSCode 左侧的调试面板（图形为一只瓢虫趴在运行键上）中，选择“PEPB_CortexDebug”调试配置，点击左侧的运行键启动调试。可能需要等待片刻才能启动。
+
+在调试面板下方，有 Cortex Live Watch 监视面板。此为实时监视面板（只能监视全局变量）。点击面板标题栏右侧的“+”号，然后在上方的命令面板中输入全局变量的名称后按回车键。可以在运行时观察变量的变化。
+
+（其他调试相关话题TODO）
