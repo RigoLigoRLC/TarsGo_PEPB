@@ -1,3 +1,6 @@
 {
-    "cmake.configureOnOpen": false
+    "cmake.configureOnOpen": false,
+    "clangd.arguments": [
+        "--query-driver=替换我/arm-gnu-toolchain-12.2/bin/arm-none-eabi-*.exe"
+    ]
 }

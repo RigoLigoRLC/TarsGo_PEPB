@@ -52,6 +52,17 @@ ARM GCC 即是本项目采用的编译器。
 
 你还可以在其他地方长期保留适用自己计算机的`cmake-kits.json`文件，并在以后创建新项目时直接覆盖复制。
 
+### Clangd 配置 ARM GCC 路径
+
+Clangd 插件需要额外配置 ARM GCC 路径，以确保 Clangd 能够正确找到 GCC 的头文件。
+
+编辑`.vscode/settings.json`文件，将`clangd.arguments`数组中的`--query-driver=`参数后的路径替换成自己计算机上 ARM GCC 编译器的 bin 目录路径。可以使用上一步的可执行文件路径并将“gcc”字眼替换成“*”，只要`bin`后的部分和模板中相仿即可。如：
+```json
+    "clangd.arguments": [
+        "--query-driver=D:/discretelibs/arm-gnu-toolchain-12.2/bin/arm-none-eabi-*.exe"
+    ]
+```
+
 ### OpenOCD 路径配置
 
 OpenOCD 即是本项目采用的烧录及调试程序。
