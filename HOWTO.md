@@ -39,6 +39,14 @@
 
 ## 设置工具链路径
 
+### 写在前面
+
+PEPB 有配套 VSCode 插件，可自动为你配置路径，减少你的工作量。请于[此处](https://github.com/RigoLigoRLC/PEPBHelper/releases)下载插件。
+
+注意插件版本号的前两段一定要与使用的 PEPB 版本号相符，或者至少要使插件版本大于 PEPB。例如，可以为 1.0.0 版本的 PEPB 使用 1.0.1 版本的PEPB Helper，但不能为 1.1.0 版本的 PEPB 使用 1.0.1 版本的 PEPB Helper。大版本号的插件原则上兼容旧版本的 PEPB，这是一个常识。
+
+下载插件后，在 VSCode 左侧插件面板点击右上角的“…”，选择“从 VSIX 安装”。安装插件后，按下“Ctrl+,”打开 VSCode 设置页面。搜索 PEPB Helper，然后依照提示填入对应路径。如不知道对应路径的含义，请参考本节的下文，这里讲详细介绍具体应当做的事情和使用到的软件。
+
 ### ARM GCC 路径配置
 
 ARM GCC 即是本项目采用的编译器。
@@ -67,7 +75,7 @@ Clangd 插件需要额外配置 ARM GCC 路径，以确保 Clangd 能够正确�
 
 OpenOCD 即是本项目采用的烧录及调试程序。
 
-编辑`cmake/Settings.json`文件，将`OpenOcd`条目下的`Path`项设为自己计算机上 OpenOCD 解压出来后里面的 bin 目录路径。如：
+编辑`.vscode/PEPBSettings.json`文件，将`OpenOcd`条目下的`Path`项设为自己计算机上 OpenOCD 解压出来后里面的 bin 目录路径。如：
 ```json
     "OpenOcd": {
         "Path": "X:/ABCDABCD/EFGHEFGH/xpack-openocd-0.12.0-1/bin",
