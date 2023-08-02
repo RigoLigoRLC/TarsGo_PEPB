@@ -47,8 +47,8 @@ function(pepb_generate_debug_target TARGET_NAME OPENOCD_EXECUTABLE OPENOCD_CHIP_
     endif()
 
     # Update launch.json
-    if(NOT EXISTS ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../.vscode/launch.json OR NOT CONFIGURATION_READ_ERROR STREQUAL "NOTFOUND")
-        file(WRITE ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../.vscode/launch.json "{\n  \"configurations\":\n    [${CFG_ENTRY}] }")
+    if(NOT EXISTS ${CMAKE_SOURCE_DIR}/.vscode/launch.json OR NOT CONFIGURATION_READ_ERROR STREQUAL "NOTFOUND")
+        file(WRITE ${CMAKE_SOURCE_DIR}/.vscode/launch.json "{\n  \"configurations\":\n    [${CFG_ENTRY}] }")
     else()
     file(WRITE ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../.vscode/launch.json "${LAUNCH_JSON}")
     endif()
@@ -56,7 +56,7 @@ endfunction()
 
 function(pepb_add_download_target TARGET_NAME)
     # Read JSON settings
-    file(READ ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/Settings.json SETTINGS_JSON)
+    file(READ ${CMAKE_SOURCE_DIR}/.vscode/PEPBSettings.json SETTINGS_JSON)
 
     string(JSON OPENOCD_BIN GET ${SETTINGS_JSON} "OpenOcd" "Path")
     string(JSON OPENOCD_CHIP GET ${SETTINGS_JSON} "OpenOcd" "Chip")

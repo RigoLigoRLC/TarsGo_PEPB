@@ -133,25 +133,34 @@ function(stm32_fixup_project TARGET_NAME CUBEMX_DIR CPU_TYPE)
     # //////////////////  DSP Lib  ////////////////////
     if(EXISTS "${CUBEMX_DIR}/Middlewares/ST/ARM/DSP")
         message(STATUS " - You have selected DSP library in CubeMX. Attempting to fixup linkage.")
-        file(GLOB_RECURSE DSP_LIB_ARCHIVE "${CUBEMX_DIR}/Middlewares/ST/ARM/DSP/*.a")
+        file(GLOB_RECURSE DSP_LIB_ARCHIVE "${CUBEMX_DIR}/Middlewares/ST/ARM/DSP/libarm_cortex*lf_math.a")
         if(DSP_LIB_ARCHIVE)
             message(STATUS " - Found DSP library archive: ${DSP_LIB_ARCHIVE}")
-            target_link_libraries(${PROJECT_NAME}.elf PUBLIC ${DSP_LIB_ARCHIVE})
+            target_link_libraries(${TARGET_NAME}.elf PUBLIC ${DSP_LIB_ARCHIVE})
 
             # Definitions based on CPU type
             # NOTE: Setting __FPU_PRESENT is not needed because stm32f4xxyy.h will do it for us
             if(CPU_TYPE STREQUAL "cortex-m0")
-                target_compile_definitions(${PROJECT_NAME}.elf PUBLIC $<$<COMPILE_LANGUAGE:C,CXX>:ARM_MATH_CM0>)
+                target_compile_definitions(${TARGET_NAME}.elf PUBLIC $<$<COMPILE_LANGUAGE:C,CXX>:ARM_MATH_CM0>)
             elseif(CPU_TYPE STREQUAL "cortex-m4")
-                target_compile_definitions(${PROJECT_NAME}.elf PUBLIC $<$<COMPILE_LANGUAGE:C,CXX>:ARM_MATH_CM4>)
+                target_compile_definitions(${TARGET_NAME}.elf PUBLIC $<$<COMPILE_LANGUAGE:C,CXX>:ARM_MATH_CM4>)
             elseif(CPU_TYPE STREQUAL "cortex-m7")
-                target_compile_definitions(${PROJECT_NAME}.elf PUBLIC $<$<COMPILE_LANGUAGE:C,CXX>:ARM_MATH_CM7>)
+                target_compile_definitions(${TARGET_NAME}.elf PUBLIC $<$<COMPILE_LANGUAGE:C,CXX>:ARM_MATH_CM7>)
             else()
                 message(WARNING " - DSP library not supported for CPU type ${CPU_TYPE}. Please contact PEPB author.")
             endif()
         else()
             message(WARNING " - DSP library archive not found. Please contact PEPB author.")
         endif()
+    endif()
+    # //////////////////////////////////////////////////
+
+    # ///////////////////// Nosys //////////////////////
+    get_target_property(TARGET_LINKS ${TARGET_NAME}.elf LINK_LIBRARIES)
+    if(NOT TARGET_LINKS MATCHES "nosys")
+        message(STATUS " - Adding -lnosys...")
+        target_link_libraries(${TARGET_NAME}.elf PRIVATE nosys)
+        target_link_options(${TARGET_NAME}.elf PRIVATE --specs=nosys.specs)
     endif()
     # //////////////////////////////////////////////////
 endfunction()
