@@ -97,7 +97,11 @@ MACRO(stm32_create_target)
     # Add CubeMX target
     add_executable(${CREATETARGET_TARGET_NAME} ${SRC_LIST} ${CREATETARGET_EXTRA_SOURCES})
     target_include_directories(${CREATETARGET_TARGET_NAME} PUBLIC ${INCL_LIST})
-    target_compile_definitions(${CREATETARGET_TARGET_NAME} PUBLIC $<$<COMPILE_LANGUAGE:C,CXX>:${MX_CDEFS}>)
+    message(STATUS " - MX_CDEFS: ${MX_CDEFS}")
+    while(MX_CDEFS)
+        list(POP_FRONT MX_CDEFS MXCDEF_ENTRY)
+        target_compile_definitions(${CREATETARGET_TARGET_NAME} PUBLIC $<$<COMPILE_LANGUAGE:C,CXX>:${MXCDEF_ENTRY}>)
+    endwhile()
 
     # Kernel-specific build settings
     target_compile_options(${CREATETARGET_TARGET_NAME} PUBLIC -mcpu=${CREATETARGET_CPU_TYPE})
