@@ -55,9 +55,18 @@ ARM GCC 即是本项目采用的编译器。
 
 编辑`.vscode/cmake-kits.json`文件，将`"C":`和`"CXX":`后的字符串改为自己计算机上 ARM GCC 编译器的可执行文件路径。如：
 ```json
-            "C": "D:/discretelibs/arm-gnu-toolchain-12.2/bin/arm-none-eabi-gcc.exe",
-            "CXX": "D:/discretelibs/arm-gnu-toolchain-12.2/bin/arm-none-eabi-g++.exe"
+        "C": "D:/discretelibs/arm-gnu-toolchain-12.2/bin/arm-none-eabi-gcc.exe",
+        "CXX": "D:/discretelibs/arm-gnu-toolchain-12.2/bin/arm-none-eabi-g++.exe"
 ```
+
+将`"PATH:"`后面字符串中，尖括号括起的部分替换为 ARM GCC 编译器的 bin 目录路径。如果你要在 Unix 操作系统 而非 Windows 上编译，则需要把尖括号部分后面的分号改为冒号；这是由于两种操作系统使用的 PATH 分隔符不同导致的。如：
+```json
+        "PATH": "D:/discretelibs/arm-gnu-toolchain-12.2/bin/;${env.PATH}"
+```
+```json
+        "PATH": "/Users/rigoligo/app/arm-gnu-toolchain-12.2.mpacbti-rel1-darwin-arm64-arm-none-eabi/bin/:${env:PATH}"
+```
+
 请务必注意，建议使用正斜杠（`/`）作为路径分隔符。如果实在想用反斜杠，需要将其补全为转义序列（`\\`）。
 
 你还可以在其他地方长期保留适用自己计算机的`cmake-kits.json`文件，并在以后创建新项目时直接覆盖复制。
@@ -66,7 +75,7 @@ ARM GCC 即是本项目采用的编译器。
 
 Clangd 插件需要额外配置 ARM GCC 路径，以确保 Clangd 能够正确找到 GCC 的头文件。
 
-编辑`.vscode/settings.json`文件，将`clangd.arguments`数组中的`--query-driver=`参数后的路径替换成自己计算机上 ARM GCC 编译器的 bin 目录路径。可以使用上一步的可执行文件路径并将“gcc”字眼替换成“*”，只要`bin`后的部分和模板中相仿即可。如：
+编辑`.vscode/settings.json`文件，将`clangd.arguments`数组中的`--query-driver=`参数后的路径替换成自己计算机上 ARM GCC 编译器的 bin 目录路径。可以使用上一步的可执行文件路径并将“gcc”字眼替换成“*”，只要`bin`后的部分和模板中相仿即可（注意在 Unix 系统中同样要符合其可执行文件名和惯例，去除`.exe`扩展名）。如：
 ```json
     "clangd.arguments": [
         "--query-driver=D:/discretelibs/arm-gnu-toolchain-12.2/bin/arm-none-eabi-*.exe"

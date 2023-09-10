@@ -4,5 +4,8 @@
         "C": "arm-none-eabi-gcc HERE",
         "CXX": "arm-none-eabi-g++ HERE"
     },
+    "environmentVariables": {
+        "PATH": "<ARM GNU Toolchain BIN directory HERE>;${env.PATH}"
+    },
     "toolchainFile": "embedded-toolchain.cmake"
 }]
