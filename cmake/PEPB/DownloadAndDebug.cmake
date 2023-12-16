@@ -1,13 +1,11 @@
 
-add_custom_target(Download_Via_OpenOCD)
-
 function(pepb_generate_debug_target TARGET_NAME OPENOCD_EXECUTABLE OPENOCD_CHIP_CFG OPENOCD_PROGRAMMER_CFG)
     # Ensure launch.json exists
-    if(EXISTS ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../.vscode/launch.json)
+    if(EXISTS ${CMAKE_SOURCE_DIR}/.vscode/launch.json)
         # Read .vscode/launch.json
-        file(READ ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../.vscode/launch.json LAUNCH_JSON)
+        file(READ ${CMAKE_SOURCE_DIR}/.vscode/launch.json LAUNCH_JSON)
 
-        # Check if there's already a configuration named PEPB_CortexDebug
+        # Check if there's already a configuration named "Debug (PEPB)"
         string(JSON CONFIGURATION_ARRAY ERROR_VARIABLE CONFIGURATION_READ_ERROR LENGTH ${LAUNCH_JSON} "configurations")
         if(NOT CONFIGURATION_READ_ERROR STREQUAL "NOTFOUND")
             message(STATUS "ERROR: ${CONFIGURATION_READ_ERROR}")
@@ -16,42 +14,45 @@ function(pepb_generate_debug_target TARGET_NAME OPENOCD_EXECUTABLE OPENOCD_CHIP_
             math(EXPR CONFIGURATION_COUNT "${CONFIGURATION_COUNT} - 1")
             foreach(INDEX RANGE ${CONFIGURATION_COUNT})
                 string(JSON CONFIGURATION_NAME GET ${LAUNCH_JSON} "configurations" ${INDEX} "name")
-                if(CONFIGURATION_NAME STREQUAL "PEPB_CortexDebug")
+                if(CONFIGURATION_NAME STREQUAL "Debug (PEPB)")
                     set(LAUNCH_CFG_ENTRY_INDEX ${CONFIGURATION_COUNT})
-                    break()
+                elseif(CONFIGURATION_NAME STREQUAL "Attach (PEPB)")
+                    set(ATTACH_CFG_ENTRY_INDEX ${CONFIGURATION_COUNT})
                 endif()
             endforeach()
         endif()
-    endif()
-
-    if(NOT DEFINED LAUNCH_CFG_ENTRY_INDEX)
-        message(STATUS " - Generating existing launch configuration...")
-        # Add a new configuration
-        set(CFG_ENTRY "{}")
-        string(JSON CFG_ENTRY SET "${CFG_ENTRY}" "name" "\"PEPB_CortexDebug\"")
-        string(JSON CFG_ENTRY SET "${CFG_ENTRY}" "type" "\"cortex-debug\"")
-        string(JSON CFG_ENTRY SET "${CFG_ENTRY}" "request" "\"launch\"")
-        string(JSON CFG_ENTRY SET "${CFG_ENTRY}" "servertype" "\"openocd\"")
-        string(JSON CFG_ENTRY SET "${CFG_ENTRY}" "cwd" "\"\${workspaceRoot}\"")
-        string(JSON CFG_ENTRY SET "${CFG_ENTRY}" "executable" "\"\${workspaceRoot}/build/${TARGET_NAME}.elf\"")
-        string(JSON CFG_ENTRY SET "${CFG_ENTRY}" "configFiles" "[\"${OPENOCD_PROGRAMMER_CFG}\", \"${OPENOCD_CHIP_CFG}\"]")
-        string(JSON CFG_ENTRY SET "${CFG_ENTRY}" "liveWatch" "{\"enabled\": true,\"samplesPerSecond\": 4}")
-        string(JSON CFG_ENTRY SET "${CFG_ENTRY}" "runToEntryPoint" "\"main\"")
     else()
-        # Update the existing configuration
-        message(STATUS " - Updating existing launch configuration...")
-        string(JSON CFG_ENTRY GET ${LAUNCH_JSON} "configurations" ${LAUNCH_CFG_ENTRY_INDEX})
-        string(JSON CFG_ENTRY SET "${CFG_ENTRY}" "executable" "\"\${workspaceRoot}/build/${TARGET_NAME}.elf\"")
-        string(JSON CFG_ENTRY SET "${CFG_ENTRY}" "configFiles" "[\"${OPENOCD_PROGRAMMER_CFG}\", \"${OPENOCD_CHIP_CFG}\"]")
-        string(JSON LAUNCH_JSON SET "${LAUNCH_JSON}" "configurations" ${LAUNCH_CFG_ENTRY_INDEX} "${CFG_ENTRY}")
+        set(LAUNCH_JSON "{\"configurations\":[]}")
     endif()
+    
+    # Create configuration template
+    set(CFG_ENTRY "{}")
+    string(JSON CFG_ENTRY SET "${CFG_ENTRY}" "name" "\"Debug (PEPB)\"")
+    string(JSON CFG_ENTRY SET "${CFG_ENTRY}" "type" "\"cortex-debug\"")
+    string(JSON CFG_ENTRY SET "${CFG_ENTRY}" "request" "\"launch\"")
+    string(JSON CFG_ENTRY SET "${CFG_ENTRY}" "servertype" "\"openocd\"")
+    string(JSON CFG_ENTRY SET "${CFG_ENTRY}" "cwd" "\"\${workspaceRoot}\"")
+    string(JSON CFG_ENTRY SET "${CFG_ENTRY}" "executable" "\"\${workspaceRoot}/build/${TARGET_NAME}.elf\"")
+    string(JSON CFG_ENTRY SET "${CFG_ENTRY}" "configFiles" "[\"${OPENOCD_PROGRAMMER_CFG}\", \"${OPENOCD_CHIP_CFG}\"]")
+    string(JSON CFG_ENTRY SET "${CFG_ENTRY}" "liveWatch" "{\"enabled\": true,\"samplesPerSecond\": 4}")
+    string(JSON CFG_ENTRY SET "${CFG_ENTRY}" "rttConfig" "{\"enabled\":true,\"address\":\"auto\",\"decoders\":[{\"label\":\"\",\"port\":0,\"type\":\"console\",\"inputmode\":\"raw\"}]}")
+
+    # Modify Launch configuration
+    if (NOT DEFINED LAUNCH_CFG_ENTRY_INDEX)
+        set(LAUNCH_CFG_ENTRY_INDEX 999999)
+    endif()
+    string(JSON LAUNCH_JSON SET "${LAUNCH_JSON}" "configurations" ${LAUNCH_CFG_ENTRY_INDEX} "${CFG_ENTRY}")
+
+    # Modify Attach configuration
+    string(JSON CFG_ENTRY SET "${CFG_ENTRY}" "name" "\"Attach (PEPB)\"")
+    string(JSON CFG_ENTRY SET "${CFG_ENTRY}" "request" "\"attach\"")
+    if (NOT DEFINED ATTACH_CFG_ENTRY_INDEX)
+        set(ATTACH_CFG_ENTRY_INDEX 999999)
+    endif()
+    string(JSON LAUNCH_JSON SET "${LAUNCH_JSON}" "configurations" ${ATTACH_CFG_ENTRY_INDEX} "${CFG_ENTRY}")
 
     # Update launch.json
-    if(NOT EXISTS ${CMAKE_SOURCE_DIR}/.vscode/launch.json OR NOT CONFIGURATION_READ_ERROR STREQUAL "NOTFOUND")
-        file(WRITE ${CMAKE_SOURCE_DIR}/.vscode/launch.json "{\n  \"configurations\":\n    [${CFG_ENTRY}] }")
-    else()
-    file(WRITE ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../.vscode/launch.json "${LAUNCH_JSON}")
-    endif()
+    file(WRITE ${CMAKE_SOURCE_DIR}/.vscode/launch.json "${LAUNCH_JSON}")
 endfunction()
 
 function(pepb_add_download_target TARGET_NAME)
@@ -88,13 +89,12 @@ function(pepb_add_download_target TARGET_NAME)
     message(STATUS " - OpenOCD Configured to use Chip: ${OPENOCD_CHIP}; Programmer: ${OPENOCD_PROGRAMMER}")
     
     # Add download target
-    add_custom_target(${TARGET_NAME}
+    add_custom_target(Download
         COMMAND ${CMAKE_COMMAND} -E env
             ${OPENOCD_EXECUTABLE} -f ${OPENOCD_PROGRAMMER_CFG} -f ${OPENOCD_CHIP_CFG} -c "init" -c "reset halt" -c "flash write_image erase ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}.bin 0x08000000" -c "reset run" -c "shutdown"
-        DEPENDS ${TARGET_NAME}.elf
+        DEPENDS ${TARGET_NAME}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     )
-    add_dependencies(Download_Via_OpenOCD ${TARGET_NAME})
 
     # Update launch.json
     pepb_generate_debug_target(${TARGET_NAME} ${OPENOCD_EXECUTABLE} ${OPENOCD_CHIP_CFG} ${OPENOCD_PROGRAMMER_CFG})

@@ -3,17 +3,19 @@
 #
 # REQUIRED
 #   CUBEMX_DIR [directory]
-#   TARGET_NAME [string.elf]
+#   TARGET_NAME [string]
+#   CPU_TYPE [string] (defaults to cortex-m4)
 #   
 # OPTIONAL
-#   CPU_TYPE [string] (defaults to cortex-m4)
+#   OUTPUT_HEX_BIN [bool] (defaults to ON)
+#   FIXUP [bool] (defaults to ON)
 #   EXTRA_SOURCES [list of files]
 #
 
-MACRO(stm32_create_target)
+function(pepb_stm32_create_target)
     # Parse arguments
     # set(options OPTIONAL FAST)
-    set(oneValueArgs CPU_TYPE CUBEMX_DIR TARGET_NAME)
+    set(oneValueArgs CPU_TYPE CUBEMX_DIR TARGET_NAME OUTPUT_HEX_BIN FIXUP)
     set(multiValueArgs EXTRA_SOURCES)
     cmake_parse_arguments(CREATETARGET "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
@@ -27,8 +29,17 @@ MACRO(stm32_create_target)
     endif()
 
     if(NOT DEFINED CREATETARGET_CPU_TYPE)
-        message(ERROR "stm32_create_target: CPU_TYPE not defined, using cortex-m4 as default")
-        set(CREATETARGET_CPU_TYPE "cortex-m4")
+        message(FATAL_ERROR "stm32_create_target: CPU_TYPE not defined")
+    endif()
+
+    if(NOT DEFINED CREATETARGET_FIXUP)
+        message(STATUS "stm32_create_target: FIXUP not defined, defaults to ON")
+        set(CREATETARGET_FIXUP ON)
+    endif()
+
+    if(NOT DEFINED CREATETARGET_OUTPUT_HEX_BIN)
+        message(STATUS "stm32_create_target: OUTPUT_HEX_BIN not defined, defaults to ON")
+        set(CREATETARGET_OUTPUT_HEX_BIN ON)
     endif()
 
     # Set default values
@@ -103,18 +114,31 @@ MACRO(stm32_create_target)
         target_compile_definitions(${CREATETARGET_TARGET_NAME} PUBLIC $<$<COMPILE_LANGUAGE:C,CXX>:${MXCDEF_ENTRY}>)
     endwhile()
 
+    # Add the ".elf" suffix to make file type more recognizable
+    set_target_properties(${CREATETARGET_TARGET_NAME} PROPERTIES SUFFIX ".elf")
+
     # Kernel-specific build settings
     target_compile_options(${CREATETARGET_TARGET_NAME} PUBLIC -mcpu=${CREATETARGET_CPU_TYPE})
     target_link_options(${CREATETARGET_TARGET_NAME} PUBLIC
             -Wl,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map -mcpu=${CREATETARGET_CPU_TYPE} -T ${LINKER_SCRIPT_${CREATETARGET_TARGET_NAME}})
-ENDMACRO()
 
-function(stm32_create_hex NAME)
+    # Fixup project as required
+    if (CREATETARGET_FIXUP)
+        pepb_stm32_fixup_project(${CREATETARGET_TARGET_NAME} ${CREATETARGET_CUBEMX_DIR} ${CREATETARGET_CPU_TYPE})
+    endif()
+
+    # Add HEX and BIN generation step as required
+    if (CREATETARGET_OUTPUT_HEX_BIN)
+        pepb_stm32_create_hex(${CREATETARGET_TARGET_NAME})
+    endif()
+endfunction()
+
+function(pepb_stm32_create_hex NAME)
     set(HEX_FILE ${PROJECT_BINARY_DIR}/${NAME}.hex)
     set(BIN_FILE ${PROJECT_BINARY_DIR}/${NAME}.bin)
-    add_custom_command(TARGET ${NAME}.elf POST_BUILD
-            COMMAND ${CMAKE_OBJCOPY} -Oihex $<TARGET_FILE:${NAME}.elf> ${HEX_FILE}
-            COMMAND ${CMAKE_OBJCOPY} -Obinary $<TARGET_FILE:${NAME}.elf> ${BIN_FILE}
+    add_custom_command(TARGET ${NAME} POST_BUILD
+            COMMAND ${CMAKE_OBJCOPY} -Oihex $<TARGET_FILE:${NAME}> ${HEX_FILE}
+            COMMAND ${CMAKE_OBJCOPY} -Obinary $<TARGET_FILE:${NAME}> ${BIN_FILE}
             COMMENT " Building ${HEX_FILE} Building ${BIN_FILE}")
 endfunction()
 
@@ -128,7 +152,7 @@ endfunction()
 # [CUBEMX_DIR] CubeMX project directory, relative to CMakeLists.txt, usually just directory name
 # [CPU_TYPE] CPU type, e.g. cortex-m4
 #
-function(stm32_fixup_project TARGET_NAME CUBEMX_DIR CPU_TYPE)
+function(pepb_stm32_fixup_project TARGET_NAME CUBEMX_DIR CPU_TYPE)
     message(STATUS "Fixing up project ${TARGET_NAME}...")
 
     # Make CubeMX directory absolute
@@ -140,16 +164,16 @@ function(stm32_fixup_project TARGET_NAME CUBEMX_DIR CPU_TYPE)
         file(GLOB_RECURSE DSP_LIB_ARCHIVE "${CUBEMX_DIR}/Middlewares/ST/ARM/DSP/libarm_cortex*lf_math.a")
         if(DSP_LIB_ARCHIVE)
             message(STATUS " - Found DSP library archive: ${DSP_LIB_ARCHIVE}")
-            target_link_libraries(${TARGET_NAME}.elf PUBLIC ${DSP_LIB_ARCHIVE})
+            target_link_libraries(${TARGET_NAME} PUBLIC ${DSP_LIB_ARCHIVE})
 
             # Definitions based on CPU type
             # NOTE: Setting __FPU_PRESENT is not needed because stm32f4xxyy.h will do it for us
             if(CPU_TYPE STREQUAL "cortex-m0")
-                target_compile_definitions(${TARGET_NAME}.elf PUBLIC $<$<COMPILE_LANGUAGE:C,CXX>:ARM_MATH_CM0>)
+                target_compile_definitions(${TARGET_NAME} PUBLIC $<$<COMPILE_LANGUAGE:C,CXX>:ARM_MATH_CM0>)
             elseif(CPU_TYPE STREQUAL "cortex-m4")
-                target_compile_definitions(${TARGET_NAME}.elf PUBLIC $<$<COMPILE_LANGUAGE:C,CXX>:ARM_MATH_CM4>)
+                target_compile_definitions(${TARGET_NAME} PUBLIC $<$<COMPILE_LANGUAGE:C,CXX>:ARM_MATH_CM4>)
             elseif(CPU_TYPE STREQUAL "cortex-m7")
-                target_compile_definitions(${TARGET_NAME}.elf PUBLIC $<$<COMPILE_LANGUAGE:C,CXX>:ARM_MATH_CM7>)
+                target_compile_definitions(${TARGET_NAME} PUBLIC $<$<COMPILE_LANGUAGE:C,CXX>:ARM_MATH_CM7>)
             else()
                 message(WARNING " - DSP library not supported for CPU type ${CPU_TYPE}. Please contact PEPB author.")
             endif()
@@ -160,11 +184,11 @@ function(stm32_fixup_project TARGET_NAME CUBEMX_DIR CPU_TYPE)
     # //////////////////////////////////////////////////
 
     # ///////////////////// Nosys //////////////////////
-    get_target_property(TARGET_LINKS ${TARGET_NAME}.elf LINK_LIBRARIES)
+    get_target_property(TARGET_LINKS ${TARGET_NAME} LINK_LIBRARIES)
     if(NOT TARGET_LINKS MATCHES "nosys")
         message(STATUS " - Adding -lnosys...")
-        target_link_libraries(${TARGET_NAME}.elf PRIVATE nosys)
-        target_link_options(${TARGET_NAME}.elf PRIVATE --specs=nosys.specs)
+        target_link_libraries(${TARGET_NAME} PRIVATE nosys)
+        target_link_options(${TARGET_NAME} PRIVATE --specs=nosys.specs)
     endif()
     # //////////////////////////////////////////////////
 endfunction()

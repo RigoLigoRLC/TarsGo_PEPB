@@ -1,7 +1,6 @@
-
 # 配置 PEPB 编译
 
-基于 PEPB 的嵌入式项目虽然可以当做正常的 CMake 项目开发，但许多代码细节专为 VSCode 设计，因此仅推荐在 VSCode 中配置此框架。文档中会介绍 VSCode 上的配置，同时项目源码中包含了 [.vscode](.vscode/)  目录及配置模板方便为 VSCode 配置。
+基于 PEPB 的嵌入式项目虽然可以当做正常的 CMake 项目开发，但许多代码细节专为 VSCode 设计，因此仅推荐在 VSCode 中配置此框架。文档中会介绍 VSCode 上的配置，同时项目源码中包含了 [.vscode](.vscode/) 目录及配置模板方便为 VSCode 配置。
 
 ## 请注意：项目文件夹路径中不能出现**空格**，否则可能导致烧录出现异常。
 
@@ -37,13 +36,15 @@
 
 在进入 VSCode 时，使用“打开文件夹”功能，然后打开包含`CMakeLists.txt`的目录，此即为项目目录。
 
+打开目录后，CMake Tools 插件可能在右下角弹出询问关于底部选项显示方式的弹窗。关于此问题，请打开 VSCode 的 CMake Tools 插件设置，搜索“cmake status bar visibility”，此时应该显示一个单选项。选择“compact”紧凑视图，然后按 F1 打开命令面板，搜索“Developer: Reload Window”，使用此命令重新加载窗口。
+
 ## 设置工具链路径
 
 ### 写在前面
 
 PEPB 有配套 VSCode 插件，可自动为你配置路径，减少你的工作量。请于[此处](https://github.com/RigoLigoRLC/PEPBHelper/releases)下载插件。
 
-注意插件版本号的前两段一定要与使用的 PEPB 版本号相符，或者至少要使插件版本大于 PEPB。例如，可以为 1.0.0 版本的 PEPB 使用 1.0.1 版本的PEPB Helper，但不能为 1.1.0 版本的 PEPB 使用 1.0.1 版本的 PEPB Helper。大版本号的插件原则上兼容旧版本的 PEPB，这是一个常识。
+注意插件版本号的前两段一定要与使用的 PEPB 版本号相符，或者至少要使插件版本大于 PEPB。例如，可以为 1.0.0 版本的 PEPB 使用 1.0.1 版本的 PEPB Helper，但不能为 1.1.0 版本的 PEPB 使用 1.0.1 版本的 PEPB Helper。大版本号的插件原则上兼容旧版本的 PEPB，这是一个常识。
 
 下载插件后，在 VSCode 左侧插件面板点击右上角的“…”，选择“从 VSIX 安装”。安装插件后，按下“Ctrl+,”打开 VSCode 设置页面。搜索 PEPB Helper，然后依照提示填入对应路径。如不知道对应路径的含义，请参考本节的下文，这里讲详细介绍具体应当做的事情和使用到的软件。
 
@@ -54,15 +55,18 @@ PEPB 有配套 VSCode 插件，可自动为你配置路径，减少你的工作�
 ARM GCC 即是本项目采用的编译器。
 
 编辑`.vscode/cmake-kits.json`文件，将`"C":`和`"CXX":`后的字符串改为自己计算机上 ARM GCC 编译器的可执行文件路径。如：
+
 ```json
         "C": "D:/discretelibs/arm-gnu-toolchain-12.2/bin/arm-none-eabi-gcc.exe",
         "CXX": "D:/discretelibs/arm-gnu-toolchain-12.2/bin/arm-none-eabi-g++.exe"
 ```
 
 将`"PATH:"`后面字符串中，尖括号括起的部分替换为 ARM GCC 编译器的 bin 目录路径。如果你要在 Unix 操作系统 而非 Windows 上编译，则需要把尖括号部分后面的分号改为冒号；这是由于两种操作系统使用的 PATH 分隔符不同导致的。如：
+
 ```json
         "PATH": "D:/discretelibs/arm-gnu-toolchain-12.2/bin/;${env.PATH}"
 ```
+
 ```json
         "PATH": "/Users/rigoligo/app/arm-gnu-toolchain-12.2.mpacbti-rel1-darwin-arm64-arm-none-eabi/bin/:${env:PATH}"
 ```
@@ -75,7 +79,8 @@ ARM GCC 即是本项目采用的编译器。
 
 Clangd 插件需要额外配置 ARM GCC 路径，以确保 Clangd 能够正确找到 GCC 的头文件。
 
-编辑`.vscode/settings.json`文件，将`clangd.arguments`数组中的`--query-driver=`参数后的路径替换成自己计算机上 ARM GCC 编译器的 bin 目录路径。可以使用上一步的可执行文件路径并将“gcc”字眼替换成“*”，只要`bin`后的部分和模板中相仿即可（注意在 Unix 系统中同样要符合其可执行文件名和惯例，去除`.exe`扩展名）。如：
+编辑`.vscode/settings.json`文件，将`clangd.arguments`数组中的`--query-driver=`参数后的路径替换成自己计算机上 ARM GCC 编译器的 bin 目录路径。可以使用上一步的可执行文件路径并将“gcc”字眼替换成“\*”，只要`bin`后的部分和模板中相仿即可（注意在 Unix 系统中同样要符合其可执行文件名和惯例，去除`.exe`扩展名）。如：
+
 ```json
     "clangd.arguments": [
         "--query-driver=D:/discretelibs/arm-gnu-toolchain-12.2/bin/arm-none-eabi-*.exe"
@@ -87,6 +92,7 @@ Clangd 插件需要额外配置 ARM GCC 路径，以确保 Clangd 能够正确�
 OpenOCD 即是本项目采用的烧录及调试程序。
 
 编辑`.vscode/PEPBSettings.json`文件，将`OpenOcd`条目下的`Path`项设为自己计算机上 OpenOCD 解压出来后里面的 bin 目录路径。如：
+
 ```json
     "OpenOcd": {
         "Path": "X:/ABCDABCD/EFGHEFGH/xpack-openocd-0.12.0-1/bin",
@@ -94,6 +100,7 @@ OpenOCD 即是本项目采用的烧录及调试程序。
         "Programmer": "stlink"
     }
 ```
+
 `Programmer`项中指明你使用的烧录器/调试器/仿真器类型。JSON 文件的注释中列出了几种常见的调试器。正点原子的无线调试器为 CMSIS-DAP 协议。**注：如果你今后需要更换其他调试器，修改此项后需要重新配置项目。关于项目配置，见[后文](#关于手动配置cmake-configure项目)。**
 
 同样，此配置文件也可以长期保留以便日后使用。
@@ -111,6 +118,7 @@ OpenOCD 即是本项目采用的烧录及调试程序。
 ## 将 CubeMX 项目添加进 PEPB 模板中
 
 编辑`CMakeLists.txt`，在`GENERAL CONFIGURATIONS`中修改项目名与 CubeMX 项目目录。如：
+
 ```cmake
 project(BoardC_Blink LANGUAGES C CXX ASM) # 此处 BoardC_Blink 即为项目名
 set(CUBEMX_PROJECT_DIR BoardC) # 此处 BoardC 即为 CubeMX 项目所处的子目录
@@ -120,9 +128,9 @@ set(CUBEMX_PROJECT_DIR BoardC) # 此处 BoardC 即为 CubeMX 项目所处的子�
 
 ### 关于手动配置（CMake Configure）项目……
 
-**注1：如果没有自动进行配置操作，可在 VSCode 左侧点击 CMake 选项卡，并在其顶部点击第一个按钮（鼠标停留时可看到“配置所有项目”提示。），或者按 F1 打开命令面板，执行“CMake: 配置”命令。**
+**注 1：如果没有自动进行配置操作，可在 VSCode 左侧点击 CMake 选项卡，并在其顶部点击第一个按钮（鼠标停留时可看到“配置所有项目”提示。），或者按 F1 打开命令面板，执行“CMake: 配置”命令。**
 
-**注2：在每一次更改了 CubeMX 中的配置后，都应该手动重新进行项目配置。**
+**注 2：在每一次更改了 CubeMX 中的配置后，都应该手动重新进行项目配置。**
 
 ## 结束
 
@@ -140,7 +148,7 @@ set(CUBEMX_PROJECT_DIR BoardC) # 此处 BoardC 即为 CubeMX 项目所处的子�
 file(GLOB_RECURSE MY_SOURCE src/*.c) # GLOB_RECURSE 递归地匹配文件，并将它们放入列表 MY_SOURCE 中
 ```
 
-这样可以得到一个文件列表`MY_SOURCE`，内容为 src 目录下递归查找 *.c 文件得到的文件名。如果要将它们加入到编译目标中，只需在`stm32_create_target`函数中添加`EXTRA_SOURCES`参数（CMakeLists 模板中已经有这一行，使用时也可直接取消其注释）：
+这样可以得到一个文件列表`MY_SOURCE`，内容为 src 目录下递归查找 \*.c 文件得到的文件名。如果要将它们加入到编译目标中，只需在`stm32_create_target`函数中添加`EXTRA_SOURCES`参数（CMakeLists 模板中已经有这一行，使用时也可直接取消其注释）：
 
 ```cmake
 stm32_create_target(CUBEMX_DIR ${CUBEMX_PROJECT_DIR}
@@ -178,7 +186,7 @@ PEPB 自带的 CMakeLists 会在添加编译目标后，再将编译目标添加
 
 要执行烧录，可在 VSCode 下方的 Build 按钮右侧的`[all]`上单击，然后在顶部的命令面板中选择`Download_Via_OpenOCD`目标。然后，单击 Build 按钮。
 
-*实验性：烧录仅测试了 ST-LINK V2 的兼容性。如其他烧录器使用中存在兼容性问题，请联系作者帮忙调试！*
+_实验性：烧录仅测试了 ST-LINK V2 的兼容性。如其他烧录器使用中存在兼容性问题，请联系作者帮忙调试！_
 
 # 调试
 
@@ -194,8 +202,8 @@ PEPB 在配置 OpenOCD 烧录时会自动在`.vscode/launch.json`中生成适用
 
 ## 启动调试
 
-在 VSCode 左侧的调试面板（图形为一只瓢虫趴在运行键上）中，选择“PEPB_CortexDebug”调试配置，点击左侧的运行键启动调试。可能需要等待片刻才能启动。
+在 VSCode 左侧的调试面板（图形为一只瓢虫趴在运行键上）中，选择“Debug (PEPB)”调试配置，点击左侧的运行键启动调试。可能需要等待片刻才能启动。这个调试目标会将代码烧录，重置单片机，然后启动调试。如果只需要将调试器附载到目标单片机上，使用“Attach (PEPB)”调试配置。
 
 在调试面板下方，有 Cortex Live Watch 监视面板。此为实时监视面板（只能监视全局变量）。点击面板标题栏右侧的“+”号，然后在上方的命令面板中输入全局变量的名称后按回车键。可以在运行时观察变量的变化。
 
-（其他调试相关话题TODO）
+默认调试配置模板支持使用 SEGGER RTT 的通道 0 输入输出。由于单片机刚启动时 RTT 还未初始化就已被调试器附载，一般无法使用“Debug (PEPB)”调试目标启动 RTT 终端，所以建议使用“Attach (PEPB)”目标启动 RTT 终端。启动调试后，在 VSCode 下方“终端”面板右侧可以看到 RTT 终端。
